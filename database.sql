@@ -22,3 +22,11 @@ CREATE TABLE `users` (
     `created_at` TIMESTAMP DEFAULT CURRENT_TIMESTAMP
 );
 
+-- 5. Test foydalanuvchi qo‘shish
+INSERT INTO `users` (`name`, `email`, `password`) VALUES
+(
+    'Marjona',
+    'emarjona747@gmail.com',
+    '$2y$10$vzdlXgvQgb0Y0i2BBVOape64X3Ffo2ghMWnprXkuTyB77orLspfW.'
+)
+

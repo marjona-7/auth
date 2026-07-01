@@ -23,14 +23,54 @@ class DB
         return $this->conn->query($sql);
     }
 
-    public function select(string $table, $columns = '*', $where = '')
-    {
-        $sql = "SELECT $columns FROM $table";
-        if ($where) {
-            $sql .= " WHERE $where";
+    public function select(
+        string $table,
+        array|string $columns = ['*'],
+        array $where = []
+    ): array {
+
+        if (is_array($columns)) {
+            $columns = implode(', ', array_map(fn($c) => "`$c`", $columns));
         }
 
-        return $this->query($sql)->fetch_all(MYSQLI_ASSOC);
+        $sql = "SELECT {$columns} FROM `{$table}`";
+
+        $params = [];
+        $types = '';
+
+        if (!empty($where)) {
+
+            $conditions = [];
+
+            foreach ($where as $column => $value) {
+
+                $conditions[] = "`$column` = ?";
+
+                $params[] = $value;
+
+                $types .= match (true) {
+                    is_int($value)   => 'i',
+                    is_float($value) => 'd',
+                    default          => 's'
+                };
+            }
+
+            $sql .= " WHERE " . implode(' AND ', $conditions);
+        }
+
+        $stmt = $this->conn->prepare($sql);
+
+        if (!$stmt) {
+            throw new Exception($this->conn->error);
+        }
+
+        if ($params) {
+            $stmt->bind_param($types, ...$params);
+        }
+
+        $stmt->execute();
+
+        return $stmt->get_result()->fetch_all(MYSQLI_ASSOC);
     }
 
     public function __destruct()
