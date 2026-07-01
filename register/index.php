@@ -12,6 +12,14 @@ $db = new DB();
 if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     $data = json_decode(file_get_contents('php://input'), true);
 
+    if (empty($data['name'])) {
+        echo json_encode([
+            'success' => false,
+            'message' => 'Ism kiritilmagan!'
+        ]);
+        exit;
+    }
+
     if (empty($data['email'])) {
         echo json_encode([
             'success' => false,
@@ -28,35 +36,46 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         exit;
     }
 
+    $name = $data['name'];
     $email = $data['email'];
     $password = $data['password'];
 
-    $user = $db->select('users', '*', ['email' => $email]);
+    $existingUser = $db->select('users', '*', [
+        'email' => $email
+    ]);
 
-    if (empty($user)) {
+    if (!empty($existingUser)) {
         echo json_encode([
             'success' => false,
-            'message' => 'Bunday foydalanuvchi mavjud emas!'
+            'message' => 'Bunday foydalanuvchi mavjud!'
         ]);
         exit;
     }
 
-    $user = $user[0];
+    $userId = $db->insert('users', [
+        'name' => $name,
+        'email' => $email,
+        'password' => password_hash($password, PASSWORD_DEFAULT),
+    ]);
 
-    if (password_verify($password, $user['password'])) {
+    if ($userId) {
         $_SESSION['loggedin'] = true;
-        $_SESSION['user']['id'] = $user['id'];
-        $_SESSION['user']['name'] = $user['name'];
-        $_SESSION['user']['email'] = $user['email'];
+        $_SESSION['user']['id'] = $userId;
+        $_SESSION['user']['name'] = $name;
+        $_SESSION['user']['email'] = $email;
+
         echo json_encode([
             'success' => true,
-            'message' => 'Kirish muvaffaqiyatli bajarildi'
+            'message' => "Ro'yxatdan o'tish muvaffaqiyatli bajarildi"
         ]);
         exit;
-    } else {
-        echo json_encode(['success' => false, 'message' => 'Parol noto‘g‘ri!']);
-        exit;
     }
+
+    echo json_encode([
+        'success' => false,
+        'message' => "Ro'yxatdan o'tishda xatolik yuz berdi!"
+    ]);
+    exit;
 }
 ?>
 
@@ -66,29 +85,33 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Login</title>
+    <title>Ro'yxatdan o'tish</title>
 </head>
 
 <body>
 
     <form action="" method="post">
+        <label for="name">Ism:</label>
+        <input type="text" id="name" required>
+        <br>
         <label for="email">Email:</label>
         <input type="email" id="email" required>
         <br>
         <label for="password">Password:</label>
         <input type="password" id="password" required>
         <br>
-        <input type="submit" value="Login">
+        <input type="submit" value="Ro'yxatdan o'tish">
 
-        <a href="../register/">Ro'yxatdan o'tish</a>
+        <a href="../login/">Kirish</a>
     </form>
 
     <script>
-        const loginForm = document.querySelector('form');
+        const registerForm = document.querySelector('form');
 
-        loginForm.addEventListener('submit', async (e) => {
+        registerForm.addEventListener('submit', async (e) => {
             e.preventDefault();
 
+            const name = document.getElementById('name').value;
             const email = document.getElementById('email').value;
             const password = document.getElementById('password').value;
 
@@ -99,6 +122,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                         'Content-Type': 'application/json'
                     },
                     body: JSON.stringify({
+                        name,
                         email,
                         password
                     })
@@ -116,6 +140,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             }
         });
     </script>
+
 </body>
 
 </html>
