@@ -37,8 +37,9 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 
     if (password_verify($password, $user['password'])) {
         $_SESSION['loggedin'] = true;
-        $_SESSION['user_id'] = $user['id'];
-        $_SESSION['email'] = $user['email'];
+        $_SESSION['user']['id'] = $user['id'];
+        $_SESSION['user']['name'] = $user['name'];
+        $_SESSION['user']['email'] = $user['email'];
         echo json_encode(['success' => true, 'message' => 'Kirish muvaffaqiyatli bajarildi']);
         exit;
     } else {
